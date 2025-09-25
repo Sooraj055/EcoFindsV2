@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>EcoFinds – Wishlist</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="assets/css/styles.css" />
+	<script>tailwind.config = { darkMode: 'class' };</script>
+</head>
+<body class="min-h-full bg-emerald-50/40 dark:bg-zinc-950 text-zinc-100">
+	<div id="navbar"></div>
+	<main class="container py-8">
+		<h1 class="text-2xl font-bold">Wishlist</h1>
+		<div id="grid" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+		<p id="empty" class="mt-6 text-zinc-400 hidden">Your wishlist is empty.</p>
+	</main>
+	<div id="footer"></div>
+	<script src="assets/js/common.js"></script>
+	<script src="assets/js/storage.js"></script>
+	<script>
+		function card(i){
+			return `<div class='bg-zinc-900 card overflow-hidden'>
+				<img src='${i.image||''}' class='w-full h-48 object-cover'>
+				<div class='p-4'>
+					<div class='font-semibold'>${i.title}</div>
+					<div class='mt-1 text-emerald-400 font-bold'>₹${i.price}</div>
+					<div class='mt-3 flex gap-2'>
+						<button data-remove='${i.id}' class='px-3 py-1 rounded bg-red-700 text-white text-sm'>Remove</button>
+					</div>
+				</div>
+			</div>`;
+		}
+		function render(){
+			const items = window.eco.wishlist.get();
+			const grid = document.getElementById('grid');
+			if (!items.length) {
+				grid.innerHTML = '';
+				document.getElementById('empty').classList.remove('hidden');
+			} else {
+				document.getElementById('empty').classList.add('hidden');
+				grid.innerHTML = items.map(card).join('');
+			}
+		}
+		document.addEventListener('click',(e)=>{
+			const btn=e.target.closest('[data-remove]');
+			if(btn){ window.eco.wishlist.remove(btn.getAttribute('data-remove')); render(); }
+		});
+		render();
+	</script>
+</body>
+</html>

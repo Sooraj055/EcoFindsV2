@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>EcoFinds – Add Product</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="assets/css/styles.css" />
+	<script>tailwind.config = { darkMode: 'class' };</script>
+</head>
+<body class="min-h-full bg-emerald-50/40 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+	<div id="navbar"></div>
+	<main class="container py-8">
+		<h1 class="text-2xl font-bold">Add Product</h1>
+		<form id="productForm" class="mt-6 grid md:grid-cols-2 gap-4">
+			<input name="title" placeholder="Title" class="px-3 py-2 rounded border dark:border-zinc-700 bg-white dark:bg-zinc-900" required />
+			<select name="category" class="px-3 py-2 rounded border dark:border-zinc-700 bg-white dark:bg-zinc-900" id="categorySelect">
+				<option value="Electronics">Electronics</option>
+				<option value="Clothing">Clothing</option>
+				<option value="Furniture">Furniture</option>
+				<option value="Books">Books</option>
+				<option value="Home Goods">Home Goods</option>
+				<option value="Sports">Sports</option>
+				<option value="Toys">Toys</option>
+				<option value="Misc">Misc</option>
+				<option value="Upscaled/Recycled">Upscaled/Recycled</option>
+				<option value="Upcycle">Upcycle</option>
+			</select>
+			<input name="price" type="number" min="0" placeholder="Price (₹)" class="px-3 py-2 rounded border dark:border-zinc-700 bg-white dark:bg-zinc-900" required />
+			<label class="flex items-center gap-2"><input type="checkbox" id="donationToggle" /> <span>Donation (free ₹0)</span></label>
+			<input name="age" placeholder="Product age (e.g., 6 months)" class="px-3 py-2 rounded border dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+			<input name="whatsapp" placeholder="WhatsApp number" class="px-3 py-2 rounded border dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+			<select name="tags" multiple class="px-3 py-2 rounded border dark:border-zinc-700 bg-white dark:bg-zinc-900">
+				<option>Premium</option>
+				<option>Donation</option>
+				<option>Hot</option>
+				<option>New</option>
+			</select>
+			<textarea name="description" placeholder="Description" class="md:col-span-2 px-3 py-2 rounded border dark:border-zinc-700 bg-white dark:bg-zinc-900"></textarea>
+			<input id="imageInput" type="file" accept="image/*" class="md:col-span-2" />
+			<img id="preview" class="md:col-span-2 max-h-64 object-cover rounded" />
+			<button type="submit" class="md:col-span-2 px-4 py-2 rounded bg-emerald-600 text-white">Save</button>
+		</form>
+		<p class="text-sm mt-2 text-zinc-600 dark:text-zinc-400">Max image size 500 KB.</p>
+	</main>
+	<div id="footer"></div>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script src="assets/js/supabase.js"></script>
+	<script src="assets/js/common.js"></script>
+	<script>
+		const form = document.getElementById('productForm');
+		const imgInput = document.getElementById('imageInput');
+		const preview = document.getElementById('preview');
+		let imageBase64 = '';
+		let editingId = new URL(location.href).searchParams.get('id');
+
+		imgInput.addEventListener('change', (e) => {
+			const file = e.target.files?.[0];
+			if (!file) return;
+			const reader = new FileReader();
+			reader.onload = () => {
+				imageBase64 = String(reader.result || '');
+				preview.src = imageBase64;
+				try { if (atob(imageBase64.split(',')[1]).length > 500*1024) { alert('Image too large (>500 KB)'); imageBase64=''; preview.removeAttribute('src'); } } catch {}
+			};
+			reader.readAsDataURL(file);
+		});
+
+		document.getElementById('donationToggle').addEventListener('change', (e)=>{
+			const priceInput = form.price;
+			const catSelect = document.getElementById('categorySelect');
+			if (e.target.checked) {
+				priceInput.value = 0;
+				priceInput.setAttribute('disabled', 'true');
+				catSelect.style.display = 'none';
+			} else {
+				priceInput.removeAttribute('disabled');
+				catSelect.style.display = '';
+			}
+		});
+
+		async function ensureAuth() {
+			const { data } = await sb.auth.getUser();
+			if (!data.user) { alert('Please login first'); location.href = 'account.html'; throw new Error('no-auth'); }
+			return data.user;
+		}
+
+		async function loadProductForEdit(id) {
+			const { data, error } = await sb.from('products').select('*').eq('id', id).single();
+			if (error || !data) { alert('Product not found'); location.href='account.html'; return; }
+			const user = (await sb.auth.getUser()).data.user;
+			if (!user || data.owner_id !== user.id) { alert('Not allowed'); location.href='account.html'; return; }
+			form.title.value = data.title||'';
+			form.category.value = data.category||'';
+			form.price.value = data.price||0;
+			form.age.value = data.age||'';
+			form.whatsapp.value = data.whatsapp||'';
+			form.description.value = data.description||'';
+			if (Array.isArray(data.tags)) {
+				[...form.tags.options].forEach(o => { o.selected = data.tags.includes(o.value); });
+			}
+			if (data.image) { imageBase64 = data.image; preview.src = data.image; }
+			form.querySelector('button[type="submit"]').textContent = 'Update';
+		}
+
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const user = await ensureAuth();
+			const fd = new FormData(form);
+			const tags = [...form.tags.options].filter(o=>o.selected).map(o=>o.value);
+			const payload = {
+				title: fd.get('title'),
+				description: fd.get('description'),
+				category: fd.get('category'),
+				price: Number(fd.get('price')||0),
+				age: fd.get('age'),
+				image: imageBase64 || preview.src || '',
+				tags: tags,
+				whatsapp: fd.get('whatsapp')
+			};
+			if (!payload.title || isNaN(payload.price)) { alert('Please fill title and valid price'); return; }
+			if (payload.image && payload.image.startsWith('data:')) {
+				try { if (atob(payload.image.split(',')[1]).length > 500*1024) { alert('Image too large (>500 KB)'); return; } } catch {}
+			}
+			if (editingId) {
+				// update
+				const { error } = await sb.from('products').update(payload).eq('id', editingId).eq('owner_id', user.id);
+				if (error) { alert('Update failed'); console.error(error); return; }
+				alert('Updated'); location.href = 'account.html';
+			} else {
+				const row = { ...payload, owner_id: user.id };
+				const { error } = await sb.from('products').insert(row);
+				if (error) { alert('Save failed'); console.error(error); return; }
+				alert('Saved'); location.href = 'index.html';
+			}
+		});
+
+		(async function init(){
+			if (editingId) { await loadProductForEdit(editingId); }
+		})();
+	</script>
+</body>
+</html>

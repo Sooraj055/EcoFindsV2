@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>EcoFinds – Browse</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="assets/css/styles.css" />
+	<script>
+		tailwind.config = { darkMode: 'class' };
+	</script>
+</head>
+<body class="min-h-full bg-emerald-50/40 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100" style="font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
+	<div id="navbar"></div>
+
+	<section class="hero py-12">
+		<div class="container">
+			<h1 class="text-3xl md:text-4xl font-extrabold text-emerald-700 dark:text-emerald-400">Buy. Sell. Donate. Sustain.</h1>
+			<p class="mt-2 text-zinc-700 dark:text-zinc-300">Discover sustainable finds near you 🌱</p>
+			<div class="mt-4 flex flex-wrap gap-2">
+				<input id="search" placeholder="Search products..." class="px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+				<select id="category" class="px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+					<option value="">All Categories</option>
+					<option>Clothing</option>
+					<option>Electronics</option>
+					<option>Furniture</option>
+					<option>Books</option>
+				</select>
+				<button id="filter-new" class="px-3 py-2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">New Arrivals</button>
+			</div>
+		</div>
+	</section>
+
+	<section class="container py-8">
+		<div class="mb-4 text-sm text-zinc-600 dark:text-zinc-400">Carbon counter: <span id="carbonCounter">0</span> kg CO₂ saved</div>
+		<div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+	</section>
+
+	<div id="footer"></div>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script src="assets/js/supabase.js"></script>
+	<script src="assets/js/common.js"></script>
+	<script src="assets/js/storage.js"></script>
+	<script>
+		async function fetchProducts() {
+			const { data, error } = await sb
+				.from('products')
+				.select('*')
+				.order('created_at', { ascending: false })
+				.limit(60);
+			if (error) { console.error(error); return []; }
+			return data || [];
+		}
+		function badgeHtml(tags, price) {
+			const parts = [];
+			if (Array.isArray(tags) && tags.includes('Premium')) parts.push('<span class="badge badge-premium">Premium</span>');
+			if (Array.isArray(tags) && tags.includes('New')) parts.push('<span class="badge badge-new">New</span>');
+			if (price === 0) parts.push('<span class="badge badge-donation">Donation</span>');
+			return parts.join(' ');
+		}
+		function card(p) {
+			return `
+			<a href="product.html?id=${p.id}" class="block bg-white dark:bg-zinc-900 card overflow-hidden">
+				<img src="${p.image || ''}" alt="${p.title}" class="w-full h-48 object-cover"/>
+				<div class="p-4">
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold">${p.title}</h3>
+						<div class="text-emerald-700 dark:text-emerald-400 font-bold">₹${p.price}</div>
+					</div>
+					<div class="mt-1 text-xs text-zinc-600 dark:text-zinc-400">${p.category || ''}</div>
+					<div class="mt-2 flex gap-2">${badgeHtml(p.tags, p.price)}</div>
+					<div class="mt-3 flex gap-2">
+						<button data-add-cart="${p.id}" class="px-3 py-1 rounded bg-emerald-600 text-white text-sm">Add to Cart</button>
+						<button data-add-wl="${p.id}" class="px-3 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-sm">Wishlist</button>
+					</div>
+				</div>
+			</a>`;
+		}
+		function render(products) {
+			const grid = document.getElementById('grid');
+			grid.innerHTML = products.map(card).join('');
+		}
+		function filterAndSearch(products) {
+			const q = document.getElementById('search').value.toLowerCase();
+			const cat = document.getElementById('category').value;
+			let list = products.filter(p => !q || (p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)));
+			if (cat) list = list.filter(p => p.category === cat);
+			return list;
+		}
+		function setupUI(products) {
+			const search = document.getElementById('search');
+			const category = document.getElementById('category');
+			[search, category].forEach(el => el.addEventListener('input', () => render(filterAndSearch(products))));
+			// Remove old quick buttons in favor of navbar dropdown; keep graceful fallbacks
+			const f500 = document.getElementById('filter-500'); if (f500) f500.remove();
+			const feco = document.getElementById('filter-eco'); if (feco) feco.remove();
+			const fnew = document.getElementById('filter-new'); if (fnew) fnew.addEventListener('click', () => render(products.slice(0, 12)));
+			document.addEventListener('eco-filter-change', (e) => {
+				const v = e.detail?.value || '';
+				let list = [...products];
+				if (v === 'new') list.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+				else if (v === 'age') list.sort((a,b)=> (a.age||'').localeCompare(b.age||''));
+				else if (v === 'p0-500') list = list.filter(p=>Number(p.price)<=500);
+				else if (v === 'p500-1000') list = list.filter(p=>Number(p.price)>500 && Number(p.price)<=1000);
+				else if (v === 'p1000-5000') list = list.filter(p=>Number(p.price)>1000 && Number(p.price)<=5000);
+				else if (v === 'p5000+') list = list.filter(p=>Number(p.price)>5000);
+				else if (v === 'rating') list = list; // placeholder; ratings sorting can be added
+				else if (v === 'near') list.sort((a,b)=> (a.city||'').localeCompare(b.city||'')); // mock
+				render(list);
+			});
+			document.addEventListener('click', (e) => {
+				const addCart = e.target.closest('[data-add-cart]');
+				const addWl = e.target.closest('[data-add-wl]');
+				if (addCart) {
+					const id = addCart.getAttribute('data-add-cart');
+					const item = products.find(p => String(p.id) === String(id));
+					if (item) {
+						const cartItem = { 
+							id: item.id, 
+							title: item.title, 
+							price: item.price, 
+							image: item.image,
+							category: item.category,
+							seller_id: item.owner_id
+						};
+						window.eco.cart.add(cartItem);
+						showToast('Item added to cart ✅');
+					}
+				}
+				if (addWl) {
+					const id = addWl.getAttribute('data-add-wl');
+					const item = products.find(p => String(p.id) === String(id));
+					if (item) window.eco.wishlist.add({ id: item.id, title: item.title, price: item.price, image: item.image });
+				}
+			});
+			function showToast(message) {
+				const toast = document.createElement('div');
+				toast.textContent = message;
+				toast.className = 'fixed top-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded shadow-lg z-50';
+				document.body.appendChild(toast);
+				setTimeout(() => toast.remove(), 2000);
+			}
+		}
+		function updateCarbonCounter(products) {
+			// naive: 2 kg CO2 saved per purchase availability
+			const saved = products.length * 2;
+			document.getElementById('carbonCounter').textContent = saved;
+		}
+		(async function init() {
+			const products = await fetchProducts();
+			updateCarbonCounter(products);
+			render(products);
+			setupUI(products);
+		})();
+	</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>EcoFinds – Account</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="assets/css/styles.css" />
+	<script>tailwind.config = { darkMode: 'class' };</script>
+</head>
+<body class="min-h-full bg-emerald-50/40 dark:bg-zinc-950 text-zinc-100">
+	<div id="navbar"></div>
+	<main class="container py-8">
+		<h1 class="text-2xl font-bold">Account</h1>
+		<section id="authSection" class="mt-6 grid md:grid-cols-2 gap-8">
+			<div class="p-4 rounded bg-zinc-900">
+				<h2 class="font-semibold">Login</h2>
+				<form id="loginForm" class="mt-3 grid gap-2">
+					<input name="email" type="email" placeholder="Email" class="px-3 py-2 rounded bg-zinc-800" required />
+					<input name="password" type="password" placeholder="Password" class="px-3 py-2 rounded bg-zinc-800" required />
+					<button class="px-3 py-2 rounded bg-emerald-600 text-white">Login</button>
+				</form>
+				<button id="forgotToggle" class="mt-2 text-sm text-emerald-400">Forgot Password?</button>
+				<form id="forgotForm" class="mt-2 grid gap-2 hidden">
+					<input name="email" type="email" placeholder="Enter your email" class="px-3 py-2 rounded bg-zinc-800" required />
+					<button class="px-3 py-2 rounded bg-zinc-700 text-white">Send Reset Link</button>
+				</form>
+				<div id="forgotMsg" class="mt-1 text-sm text-zinc-400"></div>
+			</div>
+			<div class="p-4 rounded bg-zinc-900">
+				<h2 class="font-semibold">Register</h2>
+				<form id="registerForm" class="mt-3 grid gap-2">
+					<input name="username" placeholder="Username" class="px-3 py-2 rounded bg-zinc-800" required />
+					<input name="email" type="email" placeholder="Email" class="px-3 py-2 rounded bg-zinc-800" required />
+					<input name="password" type="password" placeholder="Password" class="px-3 py-2 rounded bg-zinc-800" required />
+					<input id="avatar" type="file" accept="image/*" />
+					<img id="avatarPreview" class="max-h-40 rounded" />
+					<button class="px-3 py-2 rounded bg-emerald-600 text-white">Create Account</button>
+				</form>
+			</div>
+		</section>
+		<section id="profileSection" class="mt-10 hidden">
+			<h2 class="text-xl font-semibold">My Profile</h2>
+			<div id="profile" class="mt-3 text-zinc-300">Loading...</div>
+			<div class="mt-4">
+				<a href="addProduct.html" class="px-3 py-2 rounded bg-emerald-600 text-white text-sm">Add Product</a>
+				<button id="logoutBtn" class="ml-2 px-3 py-2 rounded bg-red-600 text-white text-sm">Logout</button>
+			</div>
+		</section>
+		<section id="listingsSection" class="mt-10 hidden">
+			<h2 class="text-xl font-semibold">My Listings</h2>
+			<div id="myListings" class="mt-3 grid gap-3"></div>
+		</section>
+		<section id="sustainabilitySection" class="mt-10 hidden">
+			<h2 class="text-xl font-semibold">Sustainability Score</h2>
+			<div id="sustain" class="mt-2 text-zinc-300">Calculating...</div>
+		</section>
+		<section id="ratingsSection" class="mt-10 hidden">
+			<h2 class="text-xl font-semibold">Your Ratings</h2>
+			<div id="myRatings" class="mt-2 text-zinc-300">No ratings yet.</div>
+		</section>
+		<section id="soldSection" class="mt-10 hidden">
+			<h2 class="text-xl font-semibold">Sold</h2>
+			<div id="soldList" class="mt-3 grid gap-3 text-zinc-300">No sold items.</div>
+		</section>
+	</main>
+	<div id="footer"></div>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script src="assets/js/supabase.js"></script>
+	<script src="assets/js/common.js"></script>
+	<script>
+		document.getElementById('avatar').addEventListener('change', (e)=>{
+			const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ document.getElementById('avatarPreview').src=r.result; }; r.readAsDataURL(f);
+		});
+		const loginForm = document.getElementById('loginForm');
+		const registerForm = document.getElementById('registerForm');
+		const profileEl = document.getElementById('profile');
+		const myListingsEl = document.getElementById('myListings');
+		const forgotToggle = document.getElementById('forgotToggle');
+		const forgotForm = document.getElementById('forgotForm');
+		const forgotMsg = document.getElementById('forgotMsg');
+		const authSection = document.getElementById('authSection');
+		const profileSection = document.getElementById('profileSection');
+		const listingsSection = document.getElementById('listingsSection');
+		const sustainabilitySection = document.getElementById('sustainabilitySection');
+		const ratingsSection = document.getElementById('ratingsSection');
+		const soldSection = document.getElementById('soldSection');
+		const soldList = document.getElementById('soldList');
+
+		function showLoggedInState() {
+			authSection.classList.add('hidden');
+			profileSection.classList.remove('hidden');
+			listingsSection.classList.remove('hidden');
+			sustainabilitySection.classList.remove('hidden');
+			ratingsSection.classList.remove('hidden');
+			soldSection.classList.remove('hidden');
+		}
+
+		function showLoggedOutState() {
+			authSection.classList.remove('hidden');
+			profileSection.classList.add('hidden');
+			listingsSection.classList.add('hidden');
+			sustainabilitySection.classList.add('hidden');
+			ratingsSection.classList.add('hidden');
+			soldSection.classList.add('hidden');
+		}
+
+		// Logout button handler
+		document.getElementById('logoutBtn').addEventListener('click', async () => {
+			await sb.auth.signOut();
+			showLoggedOutState();
+			location.reload();
+		});
+
+		loginForm.addEventListener('submit', async (e)=>{
+			e.preventDefault();
+			const fd = new FormData(loginForm);
+			const email = fd.get('email');
+			const password = fd.get('password');
+			const { error } = await sb.auth.signInWithPassword({ email, password });
+			if (error) { alert('Login failed'); console.error(error); return; }
+			location.reload();
+		});
+
+		registerForm.addEventListener('submit', async (e)=>{
+			e.preventDefault();
+			const fd = new FormData(registerForm);
+			const username = fd.get('username');
+			const email = fd.get('email');
+			const password = fd.get('password');
+			let avatarBase64 = document.getElementById('avatarPreview').src || '';
+			if (avatarBase64 && avatarBase64.startsWith('data:') && atob(avatarBase64.split(',')[1]).length > 500*1024) {
+				alert('Avatar too large (>500 KB).'); return;
+			}
+			const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username, avatar: avatarBase64 } } });
+			if (error) { alert('Register failed'); console.error(error); return; }
+			alert('Registered! Check your email if confirmation is required.');
+		});
+
+		forgotToggle.addEventListener('click',()=>{ forgotForm.classList.toggle('hidden'); });
+		forgotForm.addEventListener('submit', async (e)=>{
+			e.preventDefault();
+			const email = new FormData(forgotForm).get('email');
+			try {
+				const { error } = await sb.auth.resetPasswordForEmail(String(email||''), { redirectTo: location.origin + '/account.html' });
+				if (error) throw error;
+				forgotMsg.textContent = 'Password reset link sent to your email.';
+				forgotMsg.classList.remove('text-red-400');
+			} catch(err){
+				forgotMsg.textContent = 'Could not send reset link.';
+				forgotMsg.classList.add('text-red-400');
+			}
+		});
+
+		async function loadListings(userId){
+			const { data, error } = await sb.from('products').select('*').eq('owner_id', userId).order('created_at',{ascending:false});
+			if (error) { console.error(error); return; }
+			myListingsEl.innerHTML = (data||[]).map(p=>`<div class='p-3 rounded bg-zinc-900 flex items-center gap-3'>
+				<img src='${p.image||''}' class='w-16 h-16 object-cover rounded'>
+				<div class='flex-1'>${p.title}</div>
+				<div class='font-bold text-emerald-400'>₹${p.price}</div>
+				<a class='px-2 py-1 rounded bg-zinc-800 text-sm' href='addProduct.html?id=${p.id}'>Edit</a>
+				<button class='px-2 py-1 rounded bg-blue-700 text-white text-sm' data-sold='${p.id}'>Mark as Sold</button>
+				<button class='px-2 py-1 rounded bg-red-700 text-white text-sm' data-del='${p.id}'>Delete</button>
+			</div>`).join('') || '<div class="text-zinc-400">No listings yet.</div>';
+			loadSold(userId);
+		}
+
+		async function loadSold(userId){
+			try {
+				const { data } = await sb.from('sold').select('*').eq('owner_id', userId).order('created_at',{ascending:false});
+				soldList.innerHTML = (data||[]).map(p=>`<div class='p-3 rounded bg-zinc-900 flex items-center gap-3'>
+					<img src='${p.image||''}' class='w-16 h-16 object-cover rounded'>
+					<div class='flex-1'>${p.title}</div>
+					<div class='font-bold text-emerald-400'>₹${p.price}</div>
+				</div>`).join('') || 'No sold items.';
+			} catch { soldList.textContent = 'No sold items.'; }
+		}
+
+		document.addEventListener('click', async (e)=>{
+			const del = e.target.closest('[data-del]');
+			if (del) {
+				if (!confirm('Delete this listing?')) return;
+				const id = del.getAttribute('data-del');
+				const user = (await sb.auth.getUser()).data.user;
+				const { error } = await sb.from('products').delete().eq('id', id).eq('owner_id', user.id);
+				if (error) { alert('Delete failed'); console.error(error); return; }
+				loadListings(user.id);
+			}
+			const sold = e.target.closest('[data-sold]');
+			if (sold) {
+				if (!confirm('Mark this as sold?')) return;
+				const id = sold.getAttribute('data-sold');
+				const user = (await sb.auth.getUser()).data.user;
+				const { data, error } = await sb.from('products').select('*').eq('id', id).eq('owner_id', user.id).single();
+				if (error || !data) { alert('Action failed'); return; }
+				await sb.from('sold').insert({ ...data, original_id: data.id });
+				await sb.from('products').delete().eq('id', id).eq('owner_id', user.id);
+				// increment local carbon credits: +2 kg per sold item
+				try { window.eco.credits.add(2); } catch {}
+				loadListings(user.id);
+			}
+		});
+
+		(async function loadProfile(){
+			const { data } = await sb.auth.getUser();
+			const user = data.user;
+			if (!user) {
+				showLoggedOutState();
+				return;
+			}
+			showLoggedInState();
+			const username = user.user_metadata?.username || 'User';
+			const avatar = user.user_metadata?.avatar || '';
+			let count = 0; try { const res = await sb.from('products').select('id', { count: 'exact', head: true }).eq('owner_id', user.id); count = res.count||0; } catch {}
+			const verified = count >= 3 ? '<span class=\'badge badge-new\'>Verified Seller</span>' : '';
+			profileEl.innerHTML = `<div class='p-4 rounded bg-zinc-900 flex items-center gap-4'>
+				<img src='${avatar}' class='w-16 h-16 rounded object-cover bg-zinc-800'>
+				<div>
+					<div class='font-semibold'>${username} ${verified}</div>
+					<div class='text-sm text-zinc-400'>${user.email}</div>
+				</div>
+			</div>`;
+			loadListings(user.id);
+			try {
+				// Sum mocked CO2 saved from purchases table: 2 kg per item
+				const { data: purchases } = await sb.from('purchases').select('items').eq('user_id', user.id);
+				const saved = (purchases||[]).reduce((s, r)=> s + (Array.isArray(r.items)? r.items.length*2 : 0), 0);
+				document.getElementById('sustain').textContent = saved + ' kg CO₂e saved';
+			} catch {}
+			try {
+				const { data: ratings } = await sb.from('ratings').select('stars, review').eq('seller_id', user.id).order('created_at',{ascending:false});
+				document.getElementById('myRatings').innerHTML = (ratings||[]).map(r=>`<div class='p-3 bg-zinc-900 rounded mb-2'>${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}<div class='text-sm text-zinc-400 mt-1'>${r.review||''}</div></div>`).join('') || 'No ratings yet.';
+			} catch {}
+		})();
+	</script>
+</body>
+</html>

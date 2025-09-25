@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>EcoFinds – Checkout</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="assets/css/styles.css" />
+	<script>tailwind.config = { darkMode: 'class' };</script>
+</head>
+<body class="min-h-full bg-emerald-50/40 dark:bg-zinc-950 text-zinc-100">
+	<div id="navbar"></div>
+	<main class="container py-8">
+		<h1 class="text-2xl font-bold">Checkout</h1>
+		<p class="mt-1 text-sm text-zinc-400">Contact the seller on WhatsApp to complete your purchase.</p>
+		<div id="items" class="mt-4 grid gap-3"></div>
+		<div class="mt-4 flex items-center justify-between">
+			<div id="total" class="text-xl font-bold text-emerald-400">₹0</div>
+		</div>
+		<div id="msg" class="mt-4 text-sm text-zinc-300"></div>
+	</main>
+	<div id="footer"></div>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+	<script src="assets/js/supabase.js"></script>
+	<script src="assets/js/common.js"></script>
+	<script src="assets/js/storage.js"></script>
+	<script>
+		function waLink(number, title, price){
+			const text = encodeURIComponent(`Hello, I want to purchase ${title} for ₹${price}.\nPlease confirm the availability.`);
+			const num = String(number||'').replace(/[^0-9]/g,'');
+			return num ? `https://wa.me/${num}?text=${text}` : `https://wa.me/?text=${text}`;
+		}
+		async function loadSellerDetails(ids){
+			if (!ids.length) return {};
+			const { data, error } = await sb.from('products').select('id, whatsapp').in('id', ids);
+			if (error) { console.warn(error); return {}; }
+			const map = {}; (data||[]).forEach(r => { map[String(r.id)] = r.whatsapp; });
+			return map;
+		}
+		function render(items, idToPhone){
+			document.getElementById('items').innerHTML = items.map(i=>{
+				const phone = idToPhone[String(i.id)] || '';
+				const href = waLink(phone, i.title, i.price);
+				const qrid = `qr_${i.id}`;
+				return `<div class='p-3 rounded bg-zinc-900'>
+					<div class='flex items-center gap-3'>
+						<img src='${i.image||''}' class='w-16 h-16 object-cover rounded'>
+						<div class='flex-1'>
+							<div class='font-semibold'>${i.title}</div>
+							<div class='text-emerald-400 font-bold'>₹${i.price}</div>
+						</div>
+						<a href='${href}' target='_blank' class='px-3 py-2 rounded bg-emerald-600 text-white text-sm'>Checkout on WhatsApp</a>
+					</div>
+					<div class='mt-3'>
+						<div class='text-xs text-zinc-400 mb-1'>QR fallback:</div>
+						<div id='${qrid}' class='inline-block p-2 bg-white rounded'></div>
+					</div>
+				</div>`;
+			}).join('') || '<div class="text-zinc-400">Your cart is empty.</div>';
+			// generate QRs
+			items.forEach(i=>{
+				const phone = idToPhone[String(i.id)] || '';
+				const href = waLink(phone, i.title, i.price);
+				const el = document.getElementById(`qr_${i.id}`);
+				if (el) { el.innerHTML = ''; new QRCode(el, { text: href, width: 160, height: 160 }); }
+			});
+			const total = items.reduce((s,x)=> s + Number(x.price||0), 0);
+			document.getElementById('total').textContent = '₹'+ total;
+			const saved = (items.length * 2).toFixed(1);
+			document.getElementById('msg').textContent = `You saved ${saved} kg CO₂e by buying second-hand!`;
+		}
+		(async function init(){
+			const items = window.eco.cart.get();
+			const ids = items.map(i=>i.id);
+			const idToPhone = await loadSellerDetails(ids);
+			render(items, idToPhone);
+		})();
+	</script>
+</body>
+</html>
