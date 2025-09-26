@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>EcoFinds – Browse</title>
+	<title>EcoFinds – Category</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,48 +29,13 @@
 </head>
 <body class="min-h-full bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100" style="font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
 	<div id="navbar"></div>
-
-	<!-- Hero Section -->
-	<section class="hero bg-white dark:bg-gray-900">
-		<div class="container">
-			<div class="text-center max-w-4xl mx-auto">
-				<h1 class="text-4xl md:text-6xl font-bold text-gray-800 dark:text-gray-100 mb-6">
-					Buy. Sell. Donate. 
-					<span class="text-green-500">Sustain.</span>
-				</h1>
-				<p class="text-xl text-gray-600 dark:text-gray-400 mb-8">Discover sustainable finds near you 🌱</p>
-				
-				<!-- Quick Stats -->
-				<div class="flex justify-center gap-8 mb-8">
-					<div class="text-center">
-						<div class="text-2xl font-bold text-green-500" id="carbonCounter">0</div>
-						<div class="text-sm text-gray-600 dark:text-gray-400">kg CO₂ saved</div>
-					</div>
-					<div class="text-center">
-						<div class="text-2xl font-bold text-green-500" id="productCount">0</div>
-						<div class="text-sm text-gray-600 dark:text-gray-400">products available</div>
-					</div>
-					<div class="text-center">
-						<div class="text-2xl font-bold text-green-500" id="userCount">0</div>
-						<div class="text-sm text-gray-600 dark:text-gray-400">eco-conscious users</div>
-					</div>
-				</div>
-				
-				<!-- CTA Button -->
-				<div class="flex justify-center gap-4">
-					<a href="#products" class="btn-primary text-lg px-8 py-4">Start Shopping</a>
-					<a href="addProduct.html" class="btn-outline text-lg px-8 py-4">Sell Items</a>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<!-- Products Section -->
-	<section id="products" class="py-16 bg-white dark:bg-gray-900">
-		<div class="container">
-			<div class="text-center mb-12">
-				<h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4">Featured Products</h2>
-				<p class="text-gray-600 dark:text-gray-400">Discover amazing sustainable finds from our community</p>
+	
+	<main class="container py-8">
+		<div class="max-w-6xl mx-auto">
+			<!-- Category Header -->
+			<div class="mb-8">
+				<h1 id="categoryTitle" class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Category</h1>
+				<p id="categoryDescription" class="text-gray-600 dark:text-gray-400">Browse products in this category</p>
 			</div>
 			
 			<div class="grid lg:grid-cols-4 gap-8">
@@ -130,37 +95,56 @@
 					</div>
 				</div>
 				
-				<!-- Products Grid -->
+				<!-- Category Results -->
 				<div class="lg:col-span-3">
-					<div id="grid" class="product-grid"></div>
+					<div id="categoryResults" class="space-y-4 mb-8">
+						<!-- Results will be populated here -->
+					</div>
+					
+					<div id="noResults" class="text-center py-16 hidden">
+						<div class="text-6xl mb-4">📦</div>
+						<h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No products found</h3>
+						<p class="text-gray-600 dark:text-gray-400 mb-6">No products available in this category yet.</p>
+						<a href="index.html" class="btn-primary">Browse All Products</a>
+					</div>
 				</div>
 			</div>
 		</div>
-	</section>
-
+	</main>
+	
 	<div id="footer"></div>
-
+	
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 	<script src="assets/js/supabase.js"></script>
 	<script src="assets/js/common.js"></script>
 	<script src="assets/js/storage.js"></script>
 	<script>
-		async function fetchProducts() {
-			const { data, error } = await sb
-				.from('products')
-				.select('*')
-				.order('created_at', { ascending: false })
-				.limit(60);
-			if (error) { console.error(error); return []; }
-			return data || [];
+		let allProducts = [];
+		let filteredProducts = [];
+		
+		function getCategory() {
+			const urlParams = new URLSearchParams(window.location.search);
+			return urlParams.get('category') || '';
 		}
-		function badgeHtml(tags, price) {
-			const parts = [];
-			if (Array.isArray(tags) && tags.includes('Premium')) parts.push('<span class="badge badge-premium">Premium</span>');
-			if (Array.isArray(tags) && tags.includes('New')) parts.push('<span class="badge badge-new">New</span>');
-			if (price === 0) parts.push('<span class="badge badge-donation">Donation</span>');
-			return parts.join(' ');
+		
+		function updateCategoryHeader(category) {
+			const categoryEmojis = {
+				'Electronics': '📱',
+				'Books': '📚',
+				'Fashion': '👕',
+				'Furniture': '🪑',
+				'Home Goods': '🏠',
+				'Sports': '⚽',
+				'Toys': '🧸',
+				'Miscellaneous': '🔧',
+				'Upcycled': '♻️'
+			};
+			
+			const emoji = categoryEmojis[category] || '📦';
+			document.getElementById('categoryTitle').textContent = `${emoji} ${category}`;
+			document.getElementById('categoryDescription').textContent = `Browse ${category.toLowerCase()} products`;
 		}
+		
 		function card(p) {
 			const isLoggedIn = window.eco?.auth?.isLoggedIn || false;
 			const buttonClass = isLoggedIn ? "btn-primary text-sm" : "btn-primary text-sm opacity-50 cursor-not-allowed";
@@ -196,126 +180,17 @@
 				</a>
 			</div>`;
 		}
-		function render(products) {
-			const grid = document.getElementById('grid');
-			if (products.length === 0) {
-				grid.innerHTML = `
-					<div class="col-span-full text-center py-16">
-						<div class="text-6xl mb-4">🔍</div>
-						<h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No products found</h3>
-						<p class="text-gray-600 dark:text-gray-400 mb-6">Try adjusting your search or filters to find what you're looking for.</p>
-						<button id="clearSearchBtn" class="btn-outline">Clear Search</button>
-					</div>
-				`;
-				
-				// Add event listener for clear search button
-				const clearBtn = document.getElementById('clearSearchBtn');
-				if (clearBtn) {
-					clearBtn.addEventListener('click', () => {
-						const navSearch = document.getElementById('navSearch');
-						if (navSearch) {
-							navSearch.value = '';
-							// Trigger search change event to refresh results
-							const ev = new CustomEvent('eco-search-change', { detail: { value: '' } });
-							document.dispatchEvent(ev);
-						}
-					});
-				}
-			} else {
-				grid.innerHTML = products.map(card).join('');
-			}
+		
+		function badgeHtml(tags, price) {
+			const parts = [];
+			if (Array.isArray(tags) && tags.includes('Premium')) parts.push('<span class="badge badge-premium">Premium</span>');
+			if (Array.isArray(tags) && tags.includes('New')) parts.push('<span class="badge badge-new">New</span>');
+			if (price === 0) parts.push('<span class="badge badge-donation">Donation</span>');
+			return parts.join(' ');
 		}
-		function filterAndSearch(products) {
-			const searchValue = document.getElementById('navSearch')?.value?.toLowerCase() || '';
-			let list = products.filter(p => {
-				const titleMatch = p.title?.toLowerCase().includes(searchValue);
-				const descMatch = p.description?.toLowerCase().includes(searchValue);
-				return !searchValue || titleMatch || descMatch;
-			});
-			return list;
-		}
-		function setupUI(products) {
-			// Setup filter functionality
-			const filterInputs = document.querySelectorAll('input[name="sort"], input[name="price"]');
-			filterInputs.forEach(input => {
-				input.addEventListener('change', () => {
-					const filtered = applyFilters(products);
-					render(filtered);
-				});
-			});
-			
-			document.getElementById('clearFilters').addEventListener('click', () => {
-				filterInputs.forEach(input => input.checked = false);
-				render(products);
-			});
-			
-			// Listen for navbar search changes
-			document.addEventListener('eco-search-change', (e) => {
-				const searchValue = e.detail?.value?.toLowerCase() || '';
-				
-				const filtered = products.filter(p => {
-					const titleMatch = p.title?.toLowerCase().includes(searchValue);
-					const descMatch = p.description?.toLowerCase().includes(searchValue);
-					const categoryMatch = p.category?.toLowerCase().includes(searchValue);
-					return !searchValue || titleMatch || descMatch || categoryMatch;
-				});
-				
-				render(filtered);
-			});
-			document.addEventListener('click', (e) => {
-				const addCart = e.target.closest('[data-add-cart]');
-				const addWl = e.target.closest('[data-add-wl]');
-				if (addCart) {
-					e.preventDefault();
-					e.stopPropagation();
-					if (!window.eco.auth.requireAuth('add to cart')) return;
-					
-					const id = addCart.getAttribute('data-add-cart');
-					const item = products.find(p => String(p.id) === String(id));
-					if (item) {
-						const cartItem = { 
-							id: item.id, 
-							title: item.title, 
-							price: item.price, 
-							image: item.image,
-							category: item.category,
-							seller_id: item.owner_id
-						};
-						window.eco.cart.add(cartItem);
-						showToast('Item added to cart ✅');
-					}
-				}
-				if (addWl) {
-					e.preventDefault();
-					e.stopPropagation();
-					if (!window.eco.auth.requireAuth('add to wishlist')) return;
-					
-					const id = addWl.getAttribute('data-add-wl');
-					const item = products.find(p => String(p.id) === String(id));
-					if (item) window.eco.wishlist.add({ id: item.id, title: item.title, price: item.price, image: item.image });
-				}
-			});
-			function showToast(message) {
-				const toast = document.createElement('div');
-				toast.textContent = message;
-				toast.className = 'fixed top-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded shadow-lg z-50';
-				document.body.appendChild(toast);
-				setTimeout(() => toast.remove(), 2000);
-			}
-		}
-		function filterAndSearch(products) {
-			const searchValue = document.getElementById('navSearch')?.value?.toLowerCase() || '';
-			const categoryValue = document.getElementById('category')?.value || '';
-			
-			let filtered = products.filter(p => {
-				const matchesSearch = !searchValue || 
-					p.title?.toLowerCase().includes(searchValue) || 
-					p.description?.toLowerCase().includes(searchValue);
-				const matchesCategory = !categoryValue || p.category === categoryValue;
-				return matchesSearch && matchesCategory;
-			});
-			
-			return filtered;
+		
+		function filterByCategory(products, category) {
+			return products.filter(p => p.category === category);
 		}
 		
 		function applyFilters(products) {
@@ -351,33 +226,40 @@
 			return filtered;
 		}
 		
-		function setupUI(products) {
-			// Setup filter functionality
+		function renderResults(products) {
+			const resultsContainer = document.getElementById('categoryResults');
+			const noResults = document.getElementById('noResults');
+			
+			if (products.length === 0) {
+				resultsContainer.innerHTML = '';
+				noResults.classList.remove('hidden');
+			} else {
+				noResults.classList.add('hidden');
+				resultsContainer.innerHTML = `
+					<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+						${products.map(card).join('')}
+					</div>
+				`;
+			}
+		}
+		
+		function setupFilters() {
 			const filterInputs = document.querySelectorAll('input[name="sort"], input[name="price"]');
 			filterInputs.forEach(input => {
 				input.addEventListener('change', () => {
-					const filtered = applyFilters(products);
-					render(filtered);
+					filteredProducts = applyFilters(filterByCategory(allProducts, getCategory()));
+					renderResults(filteredProducts);
 				});
 			});
 			
 			document.getElementById('clearFilters').addEventListener('click', () => {
 				filterInputs.forEach(input => input.checked = false);
-				render(products);
+				filteredProducts = filterByCategory(allProducts, getCategory());
+				renderResults(filteredProducts);
 			});
-			
-			// Listen for navbar search changes
-			document.addEventListener('eco-search-change', (e) => {
-				const searchValue = e.detail?.value?.toLowerCase() || '';
-				const filtered = products.filter(p => {
-					const titleMatch = p.title?.toLowerCase().includes(searchValue);
-					const descMatch = p.description?.toLowerCase().includes(searchValue);
-					return titleMatch || descMatch;
-				});
-				render(filtered);
-			});
-			
-			// Add to cart and wishlist functionality
+		}
+		
+		function setupCartAndWishlist() {
 			document.addEventListener('click', (e) => {
 				const addCart = e.target.closest('[data-add-cart]');
 				const addWl = e.target.closest('[data-add-wl]');
@@ -388,7 +270,7 @@
 					if (!window.eco.auth.requireAuth('add to cart')) return;
 					
 					const id = addCart.getAttribute('data-add-cart');
-					const item = products.find(p => String(p.id) === String(id));
+					const item = allProducts.find(p => String(p.id) === String(id));
 					if (item) {
 						const cartItem = { 
 							id: item.id, 
@@ -409,7 +291,7 @@
 					if (!window.eco.auth.requireAuth('add to wishlist')) return;
 					
 					const id = addWl.getAttribute('data-add-wl');
-					const item = products.find(p => String(p.id) === String(id));
+					const item = allProducts.find(p => String(p.id) === String(id));
 					if (item) {
 						window.eco.wishlist.add({ 
 							id: item.id, 
@@ -421,39 +303,45 @@
 					}
 				}
 			});
-			
-			function showToast(message) {
-				const toast = document.createElement('div');
-				toast.textContent = message;
-				toast.className = 'toast';
-				document.body.appendChild(toast);
-				setTimeout(() => toast.remove(), 3000);
-			}
 		}
 		
-		function updateStats(products) {
-			// Update carbon counter
-			const saved = products.length * 2;
-			document.getElementById('carbonCounter').textContent = saved;
-			
-			// Update product count
-			document.getElementById('productCount').textContent = products.length;
-			
-			// Mock user count
-			document.getElementById('userCount').textContent = Math.floor(products.length * 0.3);
+		function showToast(message) {
+			const toast = document.createElement('div');
+			toast.textContent = message;
+			toast.className = 'toast';
+			document.body.appendChild(toast);
+			setTimeout(() => toast.remove(), 3000);
 		}
+		
+		async function fetchProducts() {
+			const { data, error } = await sb
+				.from('products')
+				.select('*')
+				.order('created_at', { ascending: false });
+			if (error) { console.error(error); return []; }
+			return data || [];
+		}
+		
 		(async function init() {
-			// Wait for auth state to be checked
 			await window.eco.auth.checkAuth();
 			
-			const products = await fetchProducts();
-			updateStats(products);
-			render(products);
-			setupUI(products);
+			const category = getCategory();
+			if (!category) {
+				window.location.href = 'index.html';
+				return;
+			}
+			
+			updateCategoryHeader(category);
+			allProducts = await fetchProducts();
+			filteredProducts = filterByCategory(allProducts, category);
+			
+			renderResults(filteredProducts);
+			setupFilters();
+			setupCartAndWishlist();
 			
 			// Listen for auth state changes
 			document.addEventListener('eco-auth-changed', () => {
-				render(products);
+				renderResults(filteredProducts);
 			});
 		})();
 	</script>

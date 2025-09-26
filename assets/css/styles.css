@@ -1,15 +1,256 @@
-/* Tailwind via CDN; this file for small custom tweaks */
-:root { color-scheme: light dark; }
-img { max-width: 100%; height: auto; }
-.container { max-width: 72rem; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
-.card { border-radius: 0.75rem; box-shadow: 0 6px 24px rgba(0,0,0,0.06); }
-.badge { font-size: 0.75rem; padding: 0.125rem 0.5rem; border-radius: 9999px; }
-.badge-premium { background:#fef3c7; color:#92400e; }
-.badge-new { background:#dcfce7; color:#166534; }
-.badge-donation { background:#e0e7ff; color:#3730a3; }
-
-/* Hero */
-.hero {
-	background: linear-gradient(135deg, #ecfdf5, #ffffff);
+/* EcoFinds Custom Styles - Green + White Theme */
+:root { 
+	color-scheme: light dark; 
+	--eco-green: #2ECC71;
+	--eco-dark: #27AE60;
+	--eco-gray: #F8F9FA;
+	--eco-text: #2C3E50;
 }
-.dark .hero { background: linear-gradient(135deg, #0b1324, #0a0a0a); }
+
+img { max-width: 100%; height: auto; }
+
+.container { 
+	max-width: 72rem; 
+	margin-left: auto; 
+	margin-right: auto; 
+	padding-left: 1rem; 
+	padding-right: 1rem; 
+}
+
+/* Modern Card Design */
+.card { 
+	border-radius: 1rem; 
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	transition: all 0.3s ease-in-out;
+}
+
+.card:hover {
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+	transform: translateY(-2px);
+}
+
+/* Badge Styles */
+.badge { 
+	font-size: 0.75rem; 
+	padding: 0.25rem 0.75rem; 
+	border-radius: 9999px; 
+	font-weight: 600;
+}
+
+.badge-premium { 
+	background: #fef3c7; 
+	color: #92400e; 
+}
+
+.badge-new { 
+	background: #dcfce7; 
+	color: #166534; 
+}
+
+.badge-donation { 
+	background: #e0e7ff; 
+	color: #3730a3; 
+}
+
+/* Hero Section */
+.hero {
+	background: linear-gradient(135deg, #ffffff, #f8f9fa);
+	padding: 4rem 0;
+}
+
+.dark .hero { 
+	background: linear-gradient(135deg, #1a1a1a, #0a0a0a); 
+}
+
+/* Button Styles */
+.btn-primary {
+	background-color: var(--eco-green);
+	color: white;
+	padding: 0.75rem 1.5rem;
+	border-radius: 0.75rem;
+	font-weight: 600;
+	transition: all 0.3s ease-in-out;
+	border: none;
+	cursor: pointer;
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.btn-primary:hover {
+	background-color: var(--eco-dark);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+.btn-outline {
+	background-color: transparent;
+	color: var(--eco-green);
+	border: 2px solid var(--eco-green);
+	padding: 0.75rem 1.5rem;
+	border-radius: 0.75rem;
+	font-weight: 600;
+	transition: all 0.3s ease-in-out;
+	cursor: pointer;
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.btn-outline:hover {
+	background-color: var(--eco-green);
+	color: white;
+	transform: translateY(-1px);
+}
+
+/* Form Styles */
+.form-input {
+	width: 100%;
+	padding: 0.75rem 1rem;
+	border: 2px solid #e5e7eb;
+	border-radius: 0.75rem;
+	font-size: 1rem;
+	transition: all 0.3s ease-in-out;
+	background-color: white;
+	color: #1f2937;
+}
+
+.form-input:focus {
+	outline: none;
+	border-color: var(--eco-green);
+	box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
+}
+
+/* Dark mode form styles */
+.dark .form-input {
+	background-color: #374151;
+	border-color: #4b5563;
+	color: #f9fafb;
+}
+
+.dark .form-input:focus {
+	border-color: var(--eco-green);
+	box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.2);
+}
+
+.dark .form-input::placeholder {
+	color: #9ca3af;
+}
+
+/* Select dropdown dark mode */
+select.form-input {
+	background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+	background-position: right 0.5rem center;
+	background-repeat: no-repeat;
+	background-size: 1.5em 1.5em;
+	padding-right: 2.5rem;
+}
+
+.dark select.form-input {
+	background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Tab Styles */
+.tab-container {
+	border-bottom: 2px solid #e5e7eb;
+	margin-bottom: 2rem;
+}
+
+.tab-button {
+	padding: 1rem 1.5rem;
+	background: none;
+	border: none;
+	font-weight: 600;
+	color: #6b7280;
+	cursor: pointer;
+	transition: all 0.3s ease-in-out;
+	border-bottom: 3px solid transparent;
+}
+
+.tab-button.active {
+	color: var(--eco-green);
+	border-bottom-color: var(--eco-green);
+}
+
+.tab-button:hover {
+	color: var(--eco-dark);
+}
+
+/* Toast Notifications */
+.toast {
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	background-color: var(--eco-green);
+	color: white;
+	padding: 1rem 1.5rem;
+	border-radius: 0.75rem;
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+	z-index: 1000;
+	animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+	from {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+/* Page Transitions */
+.page-enter {
+	opacity: 0;
+	transform: translateY(20px);
+}
+
+.page-enter-active {
+	opacity: 1;
+	transform: translateY(0);
+	transition: all 0.3s ease-in-out;
+}
+
+/* Responsive Grid */
+.product-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+	.product-grid {
+		grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+		gap: 1rem;
+	}
+}
+
+/* Loading States */
+.loading {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.loading::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 20px;
+	height: 20px;
+	margin: -10px 0 0 -10px;
+	border: 2px solid var(--eco-green);
+	border-radius: 50%;
+	border-top-color: transparent;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}

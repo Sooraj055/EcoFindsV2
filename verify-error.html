@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>EcoFinds – Verification Error</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="assets/css/styles.css" />
+	<script>
+		tailwind.config = { darkMode: 'class' };
+	</script>
+</head>
+<body class="min-h-full bg-emerald-50/40 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100" style="font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;">
+	<div id="navbar"></div>
+
+	<main class="container py-16">
+		<div class="max-w-md mx-auto text-center">
+			<div class="mb-8">
+				<div class="w-20 h-20 mx-auto mb-6 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+					<svg class="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+				</div>
+				<h1 class="text-3xl font-bold text-red-700 dark:text-red-400 mb-4">Verification Failed</h1>
+				<p class="text-lg text-zinc-600 dark:text-zinc-400 mb-2">❌ Verification link invalid or expired.</p>
+				<p class="text-zinc-600 dark:text-zinc-400">Please request a new confirmation email.</p>
+			</div>
+			
+			<div class="space-y-4">
+				<button id="resendBtn" class="block w-full px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors">
+					Resend Verification Email
+				</button>
+				<a href="account.html" class="block w-full px-6 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+					Back to Login
+				</a>
+			</div>
+			
+			<div class="mt-8 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+				<p class="text-sm text-red-700 dark:text-red-400">
+					💡 Verification links expire after 24 hours for security reasons.
+				</p>
+			</div>
+			
+			<div id="resendStatus" class="mt-4 hidden">
+				<p class="text-sm text-emerald-600 dark:text-emerald-400"></p>
+			</div>
+		</div>
+	</main>
+
+	<div id="footer"></div>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script src="assets/js/supabase.js"></script>
+	<script src="assets/js/common.js"></script>
+	<script>
+		document.getElementById('resendBtn').addEventListener('click', async () => {
+			const btn = document.getElementById('resendBtn');
+			const status = document.getElementById('resendStatus');
+			const statusText = status.querySelector('p');
+			
+			btn.disabled = true;
+			btn.textContent = 'Sending...';
+			
+			try {
+				// Get email from URL params or prompt user
+				const urlParams = new URLSearchParams(window.location.search);
+				const email = urlParams.get('email');
+				
+				if (!email) {
+					const userEmail = prompt('Please enter your email address:');
+					if (!userEmail) {
+						btn.disabled = false;
+						btn.textContent = 'Resend Verification Email';
+						return;
+					}
+					
+					const { error } = await sb.auth.resend({
+						type: 'signup',
+						email: userEmail,
+						options: {
+							emailRedirectTo: `${window.location.origin}/verified.html`
+						}
+					});
+					
+					if (error) throw error;
+				} else {
+					const { error } = await sb.auth.resend({
+						type: 'signup',
+						email: email,
+						options: {
+							emailRedirectTo: `${window.location.origin}/verified.html`
+						}
+					});
+					
+					if (error) throw error;
+				}
+				
+				statusText.textContent = '✅ Verification email sent! Check your inbox.';
+				status.classList.remove('hidden');
+				btn.textContent = 'Email Sent!';
+				
+			} catch (error) {
+				console.error('Resend error:', error);
+				statusText.textContent = '❌ Failed to send verification email. Please try again.';
+				status.classList.remove('hidden');
+				btn.disabled = false;
+				btn.textContent = 'Resend Verification Email';
+			}
+		});
+	</script>
+</body>
+</html>

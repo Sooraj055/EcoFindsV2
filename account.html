@@ -108,6 +108,14 @@
 		// Logout button handler
 		document.getElementById('logoutBtn').addEventListener('click', async () => {
 			await sb.auth.signOut();
+			
+			// Update auth state and dispatch event
+			window.eco.auth.user = null;
+			window.eco.auth.isLoggedIn = false;
+			document.dispatchEvent(new CustomEvent('eco-auth-changed', { 
+				detail: { isLoggedIn: false, user: null } 
+			}));
+			
 			showLoggedOutState();
 			location.reload();
 		});
@@ -119,6 +127,13 @@
 			const password = fd.get('password');
 			const { error } = await sb.auth.signInWithPassword({ email, password });
 			if (error) { alert('Login failed'); console.error(error); return; }
+			
+			// Update auth state and dispatch event
+			await window.eco.auth.checkAuth();
+			document.dispatchEvent(new CustomEvent('eco-auth-changed', { 
+				detail: { isLoggedIn: window.eco.auth.isLoggedIn, user: window.eco.auth.user } 
+			}));
+			
 			location.reload();
 		});
 
@@ -132,9 +147,45 @@
 			if (avatarBase64 && avatarBase64.startsWith('data:') && atob(avatarBase64.split(',')[1]).length > 500*1024) {
 				alert('Avatar too large (>500 KB).'); return;
 			}
-			const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username, avatar: avatarBase64 } } });
-			if (error) { alert('Register failed'); console.error(error); return; }
-			alert('Registered! Check your email if confirmation is required.');
+			
+			const { data, error } = await sb.auth.signUp({ 
+				email, 
+				password, 
+				options: { 
+					data: { username, avatar: avatarBase64 },
+					emailRedirectTo: `${window.location.origin}/verified.html`
+				} 
+			});
+			
+			if (error) { 
+				console.error('Registration error:', error);
+				if (error.message.includes('email') && error.message.includes('already')) {
+					alert('This email is already registered. Please try logging in instead.');
+				} else {
+					alert('Registration failed: ' + error.message);
+				}
+				return; 
+			}
+			
+			// Show success message with verification instructions
+			const successMessage = `
+				<div class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg mb-4">
+					<h3 class="font-semibold text-emerald-700 dark:text-emerald-400 mb-2">Registration Successful!</h3>
+					<p class="text-sm text-emerald-600 dark:text-emerald-400">
+						📧 We've sent a verification email to <strong>${email}</strong>
+					</p>
+					<p class="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
+						Please check your inbox and click the verification link to activate your account.
+					</p>
+				</div>
+			`;
+			
+			// Insert success message after the register form
+			registerForm.insertAdjacentHTML('afterend', successMessage);
+			
+			// Clear the form
+			registerForm.reset();
+			document.getElementById('avatarPreview').src = '';
 		});
 
 		forgotToggle.addEventListener('click',()=>{ forgotForm.classList.toggle('hidden'); });
@@ -142,13 +193,17 @@
 			e.preventDefault();
 			const email = new FormData(forgotForm).get('email');
 			try {
-				const { error } = await sb.auth.resetPasswordForEmail(String(email||''), { redirectTo: location.origin + '/account.html' });
+				const { error } = await sb.auth.resetPasswordForEmail(String(email||''), { 
+					redirectTo: `${window.location.origin}/verified.html` 
+				});
 				if (error) throw error;
 				forgotMsg.textContent = 'Password reset link sent to your email.';
 				forgotMsg.classList.remove('text-red-400');
+				forgotMsg.classList.add('text-emerald-400');
 			} catch(err){
 				forgotMsg.textContent = 'Could not send reset link.';
 				forgotMsg.classList.add('text-red-400');
+				forgotMsg.classList.remove('text-emerald-400');
 			}
 		});
 
@@ -203,8 +258,10 @@
 		});
 
 		(async function loadProfile(){
-			const { data } = await sb.auth.getUser();
-			const user = data.user;
+			// Wait for auth state to be checked
+			await window.eco.auth.checkAuth();
+			
+			const user = window.eco.auth.user;
 			if (!user) {
 				showLoggedOutState();
 				return;

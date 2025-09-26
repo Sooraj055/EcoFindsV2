@@ -8,8 +8,40 @@
 		console.error('Supabase JS not loaded. Include @supabase/supabase-js v2 CDN before supabase.js');
 		return;
 	}
-	window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+	window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+		auth: {
+			redirectTo: `${window.location.origin}/verified.html`
+		}
+	});
 	console.log('Supabase client initialized');
 	window.eco = window.eco || {};
 	window.eco.config = { SUPABASE_URL };
+	
+	// Set up auth state change listener for email verification
+	window.sb.auth.onAuthStateChange((event, session) => {
+		console.log('Auth state changed:', event, session);
+		
+		if (event === 'SIGNED_IN' && session?.user) {
+			// Check if this is a fresh email verification
+			const urlParams = new URLSearchParams(window.location.search);
+			const isEmailVerification = urlParams.get('type') === 'signup' || 
+									   urlParams.get('type') === 'recovery' ||
+									   window.location.hash.includes('access_token');
+			
+			// If user just verified their email, redirect to verified page
+			if (isEmailVerification && session.user.email_confirmed_at) {
+				window.location.href = '/verified.html';
+				return;
+			}
+		}
+		
+		if (event === 'SIGNED_OUT') {
+			// Handle sign out if needed
+		}
+		
+		// Handle token refresh
+		if (event === 'TOKEN_REFRESHED') {
+			console.log('Token refreshed');
+		}
+	});
 })();
