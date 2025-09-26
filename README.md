@@ -74,7 +74,7 @@ Donation flow (auto-sets price = 0)
 Dark mode toggle
 
 Responsive, green-and-white themed UI
-Demo video-
+Demo video- https://github.com/Sooraj055/EcoFindsV2/blob/main/DEMO%20VIDEO.mp4
 
 Team Contributions
 
